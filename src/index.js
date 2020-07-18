@@ -25,6 +25,7 @@ export class EditorView {
   // document container. If it is `null`, the editor will not be added
   // to the document.
   constructor(place, props) {
+    // 实例化一个编辑器视图
     this._props = props
     // :: EditorState
     // The view's current [state](#state.EditorState).
