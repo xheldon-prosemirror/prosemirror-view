@@ -24,6 +24,7 @@ export class EditorView {
   // or an object whose `mount` property holds the node to use as the
   // document container. If it is `null`, the editor will not be added
   // to the document.
+  // 新建一个 view 视图。
   constructor(place, props) {
     // 实例化一个编辑器视图
     this._props = props
