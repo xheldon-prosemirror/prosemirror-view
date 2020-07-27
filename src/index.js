@@ -17,6 +17,10 @@ export {endComposition as __endComposition} from "./input"
 // ::- An editor view manages the DOM structure that represents an
 // editable document. Its state and behavior are determined by its
 // [props](#view.DirectEditorProps).
+//
+// @cn一个编辑器视图负责整个可编辑文档。它的 state 和行为由 props 决定。
+//
+// @comment新建编辑器的第一步就是 new 一个 EditorView。
 export class EditorView {
   // :: (?union<dom.Node, (dom.Node), {mount: dom.Node}>, DirectEditorProps)
   // Create a view. `place` may be a DOM node that the editor should
@@ -24,7 +28,8 @@ export class EditorView {
   // or an object whose `mount` property holds the node to use as the
   // document container. If it is `null`, the editor will not be added
   // to the document.
-  // 新建一个 view 视图。
+  //
+  // @cn 新建一个 view 视图。
   constructor(place, props) {
     // 实例化一个编辑器视图
     this._props = props
