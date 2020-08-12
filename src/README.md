@@ -1,8 +1,6 @@
-ProseMirror's view module displays a given [editor
-state](#state.EditorState) in the DOM, and handles user events.
+ProseMirror 的 view 模块用来在 DOM 中展示给定的 [编辑器的 state](#state.EditorState)，同时处理用户触发的事件。 
 
-Make sure you load `style/prosemirror.css` as a stylesheet when using
-this module.
+当使用该模块的时候，要首先确认下已经加载了 `style/prosemirror.css` 模块作为样式表。 
 
 @EditorView
 
@@ -16,8 +14,9 @@ this module.
 
 ### Decorations
 
-Decorations make it possible to influence the way the document is
-drawn, without actually changing the document.
+装饰器是用来影响文档的展现但是又不实际改变文档内容的一种方式。
+
+（`展现`指的是视图层的东西如对话框等不是用户输入的内容，文档内容是指用户输入的内容--译者注）
 
 @Decoration
 

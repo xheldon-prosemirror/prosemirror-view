@@ -79,14 +79,23 @@ class NodeType {
 // ::- Decoration objects can be provided to the view through the
 // [`decorations` prop](#view.EditorProps.decorations). They come in
 // several variants—see the static members of this class for details.
+//
+// @cn Decoration（装饰器）对象可以通过 [`decoration` 属性](#view.EditorProps.decorations)提供给 view。
+// 它们有多个不同的变体，有关的详细信息，参见此类的静态成员。
+//
+// @comment Decoration 有三种，widget 挂件装饰器；inline 行内装饰器；node 节点装饰器；
 export class Decoration {
   constructor(from, to, type) {
     // :: number
     // The start position of the decoration.
+    //
+    // @cn decoration 开始的位置
     this.from = from
     // :: number
     // The end position. Will be the same as `from` for [widget
     // decorations](#view.Decoration^widget).
+    //
+    // @cn decoration 结束的位置。如果是 [widget decorations](#view.Decoration^widget) 的话，该值将会和 `from` 一致。
     this.to = to
     this.type = type
   }
@@ -111,7 +120,12 @@ export class Decoration {
   // also directly pass a DOM node. `getPos` can be used to find the
   // widget's current document position.
   //
+  // @cn 创建一个 widget decorations，它是一个显示在给定位置的 DOM 节点。推荐的方式是通过传递一个函数来返回 decoration，以实现当该 decoration
+  // 绘制在 view 的时候延迟渲染的目的，不过你也可以直接传递一个 DOM 节点。`getPos` 方法用来获取 widget 在当前文档的位置
+  //
   //   spec::- These options are supported:
+  //
+  //   @cn 支持以下可选参数：
   //
   //     side:: ?number
   //     Controls which side of the document position this widget is
@@ -121,10 +135,18 @@ export class Decoration {
   //     widget is drawn after the cursor and content inserted there
   //     ends up before the widget.
   //
+  //     控制该 widget 与文档位置的哪一侧相关。当是负数的时候，它绘制在给定位置光标的之前，
+  //     并且在该位置插入的内容在 widget 之后。当非负（默认）的时候，widget 绘制在给定位置光标之后，用户输入的内容会插入到该位置之前。
+  //
   //     When there are multiple widgets at a given position, their
   //     `side` values determine the order in which they appear. Those
   //     with lower values appear first. The ordering of widgets with
   //     the same `side` value is unspecified.
+  //
+  //     @cn 当在同一个位置有多个 widget 的时候，他们的 `side` 决定了它们出现的顺序。较小的值出现在前面。
+  //     相同 `side` 值的话先后位置不确定。
+  //
+  //     @comment 相同 `side` 值 widget 出现的先后位置不确定，原因跟某些算法排序的 `稳定` 概念类似。
   //
   //     When `marks` is null, `side` also determines the marks that
   //     the widget is wrapped in—those of the node before when
