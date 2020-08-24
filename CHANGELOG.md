@@ -1,3 +1,19 @@
+## 1.15.4 (2020-08-13)
+
+### Bug fixes
+
+Fix a crash that occurred when inline decorations covered inline nodes that weren't leaf nodes.
+
+## 1.15.3 (2020-08-11)
+
+### Bug fixes
+
+Work around a Firefox issue where the cursor is sometimes shown in the wrong place when directly after a `<br>` node.
+
+The editor will now reset composition when stored marks are set on the state, so that the marks can be added to the next input.
+
+Inline decorations are no longer applied to inline nodes that aren't leaves, only to the innermost layer.
+
 ## 1.15.2 (2020-07-09)
 
 ### Bug fixes
