@@ -29,12 +29,18 @@ export class EditorView {
   // document container. If it is `null`, the editor will not be added
   // to the document.
   //
-  // @cn 新建一个 view 视图。
+  // @cn 新建一个 view 视图，`place` 参数可能是一个 DOM 节点，表示编辑器的挂载点，或者一个函数，则编辑器将会被挂载在文档根节点
+  // 或者一个对象，它的 `mount` 属性的值表示编辑器的挂载 DOM，而如果是 `null`，编辑器将不会被放到文档中。
+  //
+  // @comment `place` 是一个函数的时候，函数的参数是通过 document.createElement('div') 新建的一个 DOM 节点，
+  // 该节点将会作为函数的唯一参数传入，该节点还未被放入真实文档中，需要你手动放入。
   constructor(place, props) {
     // 实例化一个编辑器视图
     this._props = props
     // :: EditorState
     // The view's current [state](#state.EditorState).
+    //
+    // @cn 编辑器当前的 [state](#state.EditorState)。
     this.state = props.state
 
     this.dispatch = this.dispatch.bind(this)
@@ -47,6 +53,8 @@ export class EditorView {
     // :: dom.Element
     // An editable DOM node containing the document. (You probably
     // should not directly interfere with its content.)
+    //
+    // @cn 一个包含编辑器文档的可编辑 DOM 节点。（你不应该直接操作该节点的内容）
     this.dom = (place && place.mount) || document.createElement("div")
     if (place) {
       if (place.appendChild) place.appendChild(this.dom)
@@ -56,6 +64,8 @@ export class EditorView {
 
     // :: bool
     // Indicates whether the editor is currently [editable](#view.EditorProps.editable).
+    //
+    // @cn 指示当前编辑器是否 [可编辑](#view.EditorProps.editable)
     this.editable = getEditable(this)
     this.markCursor = null
     this.cursorWrapper = null
@@ -68,6 +78,8 @@ export class EditorView {
     // When editor content is being dragged, this object contains
     // information about the dragged slice and whether it is being
     // copied or moved. At any other time, it is null.
+    //
+    // @cn 当编辑器的内容被拖拽的时候，这个对象包含有拖拽内容相关的信息及该内容是否被复制还是被移动。在其他时候，该对象是 null。
     this.dragging = null
 
     initInput(this)
@@ -80,9 +92,18 @@ export class EditorView {
   // Holds `true` when a
   // [composition](https://developer.mozilla.org/en-US/docs/Mozilla/IME_handling_guide)
   // is active.
+  //
+  // @cn 当 [composition](https://developer.mozilla.org/en-US/docs/Mozilla/IME_handling_guide) 事件触发的时候，该值为 true。
+  //
+  // @comment composition 事件与 CJK 输入法有关，也与浏览器实现有关，Safari 和 Chrome 中的 composition 触发顺序就不一样，以及一些其他差异
+  // 这导致了一些使用 ProseMirror 的编辑器在 Safari 上的表现比较诡异，论坛中也有很多针对 Safari 反馈的 bug，大多跟 composition 有关。
 
   // :: DirectEditorProps
   // The view's current [props](#view.EditorProps).
+  //
+  // @cn 编辑器 view 的 [props（属性）](#view.EditorProps)
+  //
+  // @comment props 是一个 getter 属性，每次通过 view.props 访问到的 props 带的一定是最新的 state。
   get props() {
     if (this._props.state != this.state) {
       let prev = this._props
@@ -96,6 +117,8 @@ export class EditorView {
   // :: (DirectEditorProps)
   // Update the view's props. Will immediately cause an update to
   // the DOM.
+  //
+  // @cn 更新 view 的 props。将会立即引起 DOM 的更新。
   update(props) {
     if (props.handleDOMEvents != this._props.handleDOMEvents) ensureListeners(this)
     this._props = props
@@ -106,6 +129,8 @@ export class EditorView {
   // Update the view by updating existing props object with the object
   // given as argument. Equivalent to `view.update(Object.assign({},
   // view.props, props))`.
+  //
+  // @cn 用给定的参数来更新已有的 props 对象，以达到更新 view 的目的。等同于 `view.update(Object.assign({}, view.props, props))`.
   setProps(props) {
     let updated = {}
     for (let name in this._props) updated[name] = this._props[name]
@@ -117,6 +142,7 @@ export class EditorView {
   // :: (EditorState)
   // Update the editor's `state` prop, without touching any of the
   // other props.
+  // @cn 单独更新编辑器 props 的 `state` 属性。
   updateState(state) {
     this.updateStateInner(state, this.state.plugins != state.plugins)
   }
@@ -229,6 +255,16 @@ export class EditorView {
   // that is immediately returned. When `f` isn't provided, it is
   // treated as the identity function (the prop value is returned
   // directly).
+  //
+  // @cn 遍历给定属性名所有的值，在编辑器 props 中的属性优先，然后按照插件书写的顺序遍历插件的 props 上的该属性，获取它的值，
+  // 若遇到该属性的值不是 undefined 的话就调用 `f` 函数。当 `f` 函数返回一个真值，那么该 somePorp 函数则立即返回该属性值。如果 `f` 函数
+  // 未提供，则将其当成是一个拥有固定返回值的函数（即遍历到第一个给定属性且有值的话则直接返回该值）
+  //
+  // @comment 若提供了 f 函数，则 f 函数执行的时候，参数即为遍历到的 prop 的值（一般是个函数），
+  // 若 f 函数返回了真值，则 someProp 函数的返回值即为 f 函数本身，并停止遍历；若 f 函数返回了非真值， 则继续遍历，直到遇到真值才返回。
+  // 若 f 函数未提供，则如果 prop 的值不为 undefined，则直接返回该值。
+  // 
+  // @comment 一般用法是 view.someProp('handleResize', v => v(view, state, slice, other))，这里的 v 即为你写的 prop 属性值。
   someProp(propName, f) {
     let prop = this._props && this._props[propName], value
     if (prop != null && (value = f ? f(prop) : prop)) return value
@@ -241,12 +277,18 @@ export class EditorView {
 
   // :: () → bool
   // Query whether the view has focus.
+  //
+  // @cn 查询当前 view 是否被 focus。
   hasFocus() {
     return this.root.activeElement == this.dom
   }
 
   // :: ()
   // Focus the editor.
+  //
+  // @cn focus 编辑器。
+  //
+  // @comment 这个过程会用到特性检测，即检查 dom.focus({preventScroll: true}) 是否支持。
   focus() {
     this.domObserver.stop()
     if (this.editable) focusPreventScroll(this.dom)
@@ -259,6 +301,9 @@ export class EditorView {
   // usually be the top-level `document`, but might be a [shadow
   // DOM](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Shadow_DOM)
   // root if the editor is inside one.
+  //
+  // @cn 获取编辑器所在的根节点。通常情况下是顶级节点 `document`，但是也可能是一个 [shadow DOM](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Shadow_DOM)
+  // 根节点，如果编辑器在它内部的话。
   get root() {
     let cached = this._root
     if (cached == null) for (let search = this.dom.parentNode; search; search = search.parentNode) {
