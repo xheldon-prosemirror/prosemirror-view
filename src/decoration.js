@@ -121,7 +121,7 @@ export class Decoration {
   // widget's current document position.
   //
   // @cn 创建一个 widget decorations，它是一个显示在给定位置的 DOM 节点。推荐的方式是通过传递一个函数来返回 decoration，以实现当该 decoration
-  // 绘制在 view 的时候延迟渲染的目的，不过你也可以直接传递一个 DOM 节点。`getPos` 方法用来获取 widget 在当前文档的位置
+  // 绘制在 view 的时候延迟渲染的目的，不过你也可以直接传递一个 DOM 节点。`getPos` 方法用来获取 widget 在当前文档的位置。
   //
   //   spec::- These options are supported:
   //
@@ -135,7 +135,7 @@ export class Decoration {
   //     widget is drawn after the cursor and content inserted there
   //     ends up before the widget.
   //
-  //     控制该 widget 与文档位置的哪一侧相关。当是负数的时候，它绘制在给定位置光标的之前，
+  //     @cn 控制该 widget 与文档位置的哪一侧相关。当是负数的时候，它绘制在给定位置光标的之前，
   //     并且在该位置插入的内容在 widget 之后。当非负（默认）的时候，widget 绘制在给定位置光标之后，用户输入的内容会插入到该位置之前。
   //
   //     When there are multiple widgets at a given position, their
