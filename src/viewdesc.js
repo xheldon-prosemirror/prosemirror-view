@@ -13,14 +13,24 @@ import browser from "./browser"
 // the behavior of a node's in-editor representation, and need to
 // [define](#view.EditorProps.nodeViews) a custom node view.
 //
+// @cn 默认情况下，文档节点使用它们 schema 配置对象中的 [`toDOM`](#model.NodeSpec.toDOM)
+// 方法来渲染，然后完全由编辑器管理状态。而对于一些使用场景，比如为特定节点嵌入编辑界面等情况，
+// 你可能想要更加细粒度的控制一个节点在编辑器中的表现形式，因此，你需要 [define](#view.EditorProps.nodeViews) 一个自定义的 node view。
+//
 // Mark views only support `dom` and `contentDOM`, and don't support
 // any of the node view methods.
 //
+// @cn Mark 的 view 仅仅支持 `dom` 和 `contentDOM`，而且不支持任何 node view 的方法。
+//
 // Objects returned as node views must conform to this interface.
+//  
+// @cn node views 们返回的对象必须保证有以下接口：
 //
 //   dom:: ?dom.Node
 //   The outer DOM node that represents the document node. When not
 //   given, the default strategy is used to create a DOM node.
+//
+//   @cn 表示该文档节点的外层 DOM 节点。如果没有给出，那么默认的策略是创建一个 DOM 节点。
 //
 //   contentDOM:: ?dom.Node
 //   The DOM node that should hold the node's content. Only meaningful
@@ -29,6 +39,10 @@ import browser from "./browser"
 //   will take care of rendering the node's children into it. When it
 //   is not present, the node view itself is responsible for rendering
 //   (or deciding not to render) its child nodes.
+//
+//   @cn 应该持有节点的内容的 DOM 节点。只有当定义了 `dom` 属性且节点类型不是叶子节点的时候才有意义。
+//   当它设置的时候，ProseMirror 将会将节点的子节点渲染到该 DOM 中作为它的子节点；
+//   如果没有设置，node view 本身有责任渲染（或者决定不渲染）它的子节点。
 //
 //   update:: ?(node: Node, decorations: [Decoration]) → bool
 //   When given, this will be called when the view is updating itself.
@@ -40,13 +54,22 @@ import browser from "./browser"
 //   no `dom` property), updating its child nodes will be handled by
 //   ProseMirror.
 //
+//   @cn 当 node view 更新自身的时候会调用该节点的此方法。它接受一个 node（可能是与当前不同的类型）、
+//   一个激活的 decorations 数组（它会自行渲染，如果 node view 对它的新的不感兴趣的话可以忽略）作为参数。
+//   如果 node 需要被更新，则返回 true，否则返回 false。如果 node view 有一个 `contentDOM` 属性（或者 `dom`
+//   属性），则它的子节点的更新将交给 ProseMirror 来控制。
+//
 //   selectNode:: ?()
 //   Can be used to override the way the node's selected status (as a
 //   node selection) is displayed.
 //
+//   @cn 可以用来覆盖节点选中的展示状态（作为一个节点选区）。
+//
 //   deselectNode:: ?()
 //   When defining a `selectNode` method, you should also provide a
 //   `deselectNode` method to remove the effect again.
+//
+//   @cn 当定义一个 `selectNode` 方法，你应该同时提供一个 `deselectNode` 方法去移除前者所做的效果。
 //
 //   setSelection:: ?(anchor: number, head: number, root: dom.Document)
 //   This will be called to handle setting the selection inside the
@@ -55,10 +78,15 @@ import browser from "./browser"
 //   the DOM positions corresponding to those positions, but if you
 //   override it you can do something else.
 //
+//   @cn 该方法将会被调用以用来处理节点内部选区的设置。`anchor` 和 `head` 位置相对于节点的起始位置。
+//   默认情况下，将会在与这些位置相对应的 DOM 位置之间创建 DOM 选区，不过你可以通过覆盖该行为来做一些其他的事情。
+//
 //   stopEvent:: ?(event: dom.Event) → bool
 //   Can be used to prevent the editor view from trying to handle some
 //   or all DOM events that bubble up from the node view. Events for
 //   which this returns true are not handled by the editor.
+//
+//   @cn 可以用来阻止编辑器处理一些或者所有的源自 node view 的 DOM 事件。返回 true 表示编辑器不处理该事件。
 //
 //   ignoreMutation:: ?(dom.MutationRecord) → bool
 //   Called when a DOM
@@ -70,9 +98,16 @@ import browser from "./browser"
 //   re-parse the range around the mutation, true if it can safely be
 //   ignored.
 //
+//   @cn 当一个 DOM [mutation（突变）](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
+//   的时候调用，或者在 node view 内一个选区改变的时候调用。当是选区改变的时候，record 将会有一个值为 `「selection」` 的 `type`
+//   属性（原生的 mutation records 没有）。返回 false 表示编辑器应该重新读取选区或者重新 parse 突变附近的 DOM，
+//   返回 true 表示该突变可以被安全的忽略掉。
+//
 //   destroy:: ?()
 //   Called when the node view is removed from the editor or the whole
 //   editor is destroyed.
+//   
+//   @cn 当整个编辑器被销毁或者当前 node view 被移除的时候调用。
 
 // View descriptions are data structures that describe the DOM that is
 // used to represent the editor's content. They are used for:

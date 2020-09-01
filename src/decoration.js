@@ -152,17 +152,26 @@ export class Decoration {
   //     the widget is wrapped in—those of the node before when
   //     negative, those of the node after when positive.
   //
+  //     @cn 当 `marks` 是 null 的时候，`side` 同样决定 widget 包裹的 marks。节点之前的是负的，节点之后的是正的。
+  //
   //     marks:: ?[Mark]
   //     The precise set of marks to draw around the widget.
+  //
+  //     @cn 绘制在 widget 周围的 marks。
   //
   //     stopEvent:: ?(event: dom.Event) → bool
   //     Can be used to control which DOM events, when they bubble out
   //     of this widget, the editor view should ignore.
   //
+  //     @cn 可以用来控制编辑器应该忽略从 widget 冒泡出来的哪些 DOM 事件。
+  //
   //     ignoreSelection:: ?bool
   //     When set (defaults to false), selection changes inside the
   //     widget are ignored, and don't cause ProseMirror to try and
   //     re-sync the selection with its selection state.
+  //
+  //     @cn 当设置的时候（默认是 false），在 widget 内的选区变化将被忽略，
+  //     这样的话该变化就不会让 ProseMirror 尝试重新同步该选区和 state 的选区。
   //
   //     key:: ?string
   //     When comparing decorations of this type (in order to decide
@@ -174,6 +183,11 @@ export class Decoration {
   //     key are interchangeable—if widgets differ in, for example,
   //     the behavior of some event handler, they should get
   //     different keys.
+  //     
+  //     @cn 当比较此种类型的 decorations 的时候（以决定它是否应该被重绘），ProseMirror
+  //     将会默认通过 widget DOM 节点来识别。如果你传递了一个 key，那它就会用 key 来对比。
+  //     这对于你仅仅想在内存中创建 decorations 而不真正绘制 DOM 结构很有用。确保任何具有相同 key 的 widget
+  //     是可互换的--比如，如果 widget 的一些事件处理函数不一样，即使 DOM 结构相同，也应该有不同的 key。
   static widget(pos, toDOM, spec) {
     return new Decoration(pos, pos, new WidgetType(toDOM, spec))
   }
@@ -182,7 +196,11 @@ export class Decoration {
   // Creates an inline decoration, which adds the given attributes to
   // each inline node between `from` and `to`.
   //
+  // @cn 创建一个内联的 decoration，它会在 `from` 和 `to` 之间的每一个内联节点上添加给定的 attributes。
+  //
   //   spec::- These options are recognized:
+  //
+  //   @cn 支持一下可选参数：
   //
   //     inclusiveStart:: ?bool
   //     Determines how the left side of the decoration is
@@ -191,10 +209,15 @@ export class Decoration {
   //     won't include the new content, but you can set this to `true`
   //     to make it inclusive.
   //
+  //     @cn 决定如果内容直接插入在这个位置的时候，decoration 的左侧如何 [mapped](#transform.Position_Mapping)。
+  //     默认情况下，decoration 不会包括新的内容，不过你可以设置为 `true` 来让它影响新内容。
+  //
   //     inclusiveEnd:: ?bool
   //     Determines how the right side of the decoration is mapped.
   //     See
   //     [`inclusiveStart`](#view.Decoration^inline^spec.inclusiveStart).
+  //     
+  //     @cn 决定 decoration 的右侧如何被 mapped。具体看 [`inclusiveStart`](#view.Decoration^inline^spec.inclusiveStart)。
   static inline(from, to, attrs, spec) {
     return new Decoration(from, to, new InlineType(attrs, spec))
   }
@@ -203,11 +226,15 @@ export class Decoration {
   // Creates a node decoration. `from` and `to` should point precisely
   // before and after a node in the document. That node, and only that
   // node, will receive the given attributes.
+  //  
+  // @cn 创建一个 node decoration。`from` 和 `to` 应该精确的指向在文档中的某个节点的前面和后面。该节点，也只有该节点，会受到给定的 attributes。  
   //
   //   spec::-
   //
   //   Optional information to store with the decoration. It
   //   is also used when comparing decorators for equality.
+  //   
+  //   @cn decoration 存储的可选的信息。也用来比较 decorators（装饰器们）是否相等。
   static node(from, to, attrs, spec) {
     return new Decoration(from, to, new NodeType(attrs, spec))
   }
@@ -215,6 +242,8 @@ export class Decoration {
   // :: Object
   // The spec provided when creating this decoration. Can be useful
   // if you've stored extra information in that object.
+  //
+  // @cn 当创建 decoration 的时候提供的配置。用来存储一些额外的信息非常有用。
   get spec() { return this.type.spec }
 
   get inline() { return this.type instanceof InlineType }
@@ -225,23 +254,34 @@ export class Decoration {
 // simply directly correspond to DOM attributes of the same name,
 // which will be set to the property's value. These are exceptions:
 //
+// @cn 一个被用来添加到被装饰的节点附近的 attributes 集合。大多数 properties
+// 的名字与同名的 DOM attributes 一样，以用来被设置为属性值。下面几个是特例：
+//
 //   class:: ?string
 //   A CSS class name or a space-separated set of class names to be
 //   _added_ to the classes that the node already had.
+//    
+//   @cn 会被 _添加_ 到节点已有的类名上的 CSS 的类名，或者用空格分隔的 css 类名集合。
 //
 //   style:: ?string
 //   A string of CSS to be _added_ to the node's existing `style` property.
 //
+//   @cn 会被 _添加_ 到节点已有的 `style` 属性上的 CSS 字符串。
+//
 //   nodeName:: ?string
 //   When non-null, the target node is wrapped in a DOM element of
 //   this type (and the other attributes are applied to this element).
-
+//
+//   @cn 如果该值为非 null，则目标节点将会用该类型的节点包裹住（同时其他的属性会被应用到该元素上）。
 const none = [], noSpec = {}
 
 // ::- A collection of [decorations](#view.Decoration), organized in
 // such a way that the drawing algorithm can efficiently use and
 // compare them. This is a persistent data structure—it is not
 // modified, updates create a new value.
+//
+// @cn 一个 [decorations](#view.Decoration) 集合，用这种数据结构组织它们可以让绘制算法高效的对比和渲染它们。
+// 它是一个不可突变的数据结构，它不改变，更新会产生新的值。
 export class DecorationSet {
   constructor(local, children) {
     this.local = local && local.length ? local : none
@@ -251,6 +291,8 @@ export class DecorationSet {
   // :: (Node, [Decoration]) → DecorationSet
   // Create a set of decorations, using the structure of the given
   // document.
+  //
+  // @cn 用给定文档的结构，创建一个 decorations 集合。
   static create(doc, decorations) {
     return decorations.length ? buildTree(decorations, doc, 0, noSpec) : empty
   }
@@ -262,6 +304,10 @@ export class DecorationSet {
   // `start` and `end` are omitted, all decorations in the set are
   // considered. When `predicate` isn't given, all decorations are
   // assumed to match.
+  //
+  // @cn 找到给定范围涉及到的所有的 decoration 集合（包括开始或结束位置在边界的 decorations），
+  // 然后用给定的 predicate 函数来检测是否匹配，该函数参数是 decoration 的配置对象。
+  // 若 `start` 和 `end` 省略，则集合中所有的 decoration 将会被检测。如果 `predicate` 没有给出，则所有的 decorations 将会 match。
   find(start, end, predicate) {
     let result = []
     this.findInner(start == null ? 0 : start, end == null ? 1e9 : end, result, 0, predicate)
@@ -286,12 +332,18 @@ export class DecorationSet {
   // Map the set of decorations in response to a change in the
   // document.
   //
+  // @cn Map decorations 的集合以响应文档修改。
+  //
   //   options::- An optional set of options.
+  //
+  //   @cn 有如下参数可选：
   //
   //     onRemove:: ?(decorationSpec: Object)
   //     When given, this function will be called for each decoration
   //     that gets dropped as a result of the mapping, passing the
   //     spec of that decoration.
+  //
+  //     @cn 当设置该函数的时候，该函数会对在 mapping 过程中被移除的 decoration 调用该函数，传递 decoration 的配置对象。
   map(mapping, doc, options) {
     if (this == empty || mapping.maps.length == 0) return this
     return this.mapInner(mapping, doc, 0, 0, options || noSpec)
@@ -315,6 +367,9 @@ export class DecorationSet {
   // Add the given array of decorations to the ones in the set,
   // producing a new set. Needs access to the current document to
   // create the appropriate tree structure.
+  //
+  // @cn 在当前 decorations 集合中增加给定数组中的 decorations，以产生一个新的集合。
+  // 需要传递当前文档 doc 以创建合适的树状结构。
   add(doc, decorations) {
     if (!decorations.length) return this
     if (this == empty) return DecorationSet.create(doc, decorations)
@@ -344,6 +399,8 @@ export class DecorationSet {
   // :: ([Decoration]) → DecorationSet
   // Create a new set that contains the decorations in this set, minus
   // the ones in the given array.
+  //
+  // @cn 用当前的 decorations 集合减去给定数组中的 decorations，得到一个新的 decorations 集合。
   remove(decorations) {
     if (decorations.length == 0 || this == empty) return this
     return this.removeInner(decorations, 0)
@@ -437,6 +494,8 @@ const empty = new DecorationSet()
 
 // :: DecorationSet
 // The empty set of decorations.
+//
+// @cn decorations 的空集合。
 DecorationSet.empty = empty
 
 DecorationSet.removeOverlap = removeOverlap
