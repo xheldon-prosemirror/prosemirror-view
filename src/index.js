@@ -683,7 +683,7 @@ function changedNodeViews(a, b) {
 //   The `plain` flag will be true when the text is pasted as plain text.
 //
 //   @cn 将粘贴板中的文本 parse 成文档 slice。将会在 [`transformPastedText`](#view.EditorProps.transformPastedText) 之后调用。
-//   默认行为是将文本分隔成多行，然后使用 `<p>` 标签包裹之，然后再对其调用 [clipboardParser`](#view.EditorProps.clipboardParser)。如果粘贴的内容是纯文本，则 `plain` 将会是 true。
+//   默认行为是将文本分割成多行，然后使用 `<p>` 标签包裹之，然后再对其调用 [clipboardParser`](#view.EditorProps.clipboardParser)。如果粘贴的内容是纯文本，则 `plain` 将会是 true。
 //
 //   transformPasted:: ?(Slice) → Slice
 //   Can be used to transform pasted content before it is applied to
