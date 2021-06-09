@@ -129,4 +129,46 @@ describe("nodeViews prop", () => {
     view.dispatch(view.state.tr.setMeta("setDeco", "bar"))
     ist(view.dom.querySelector("var").textContent, "bar")
   })
+
+  it("provides access to inner decorations in the constructor", () => {
+    tempEditor({
+      doc: doc(p("foo")),
+      nodeViews: {paragraph(_node, _v, _pos, _outer, innerDeco) {
+        let dom = document.createElement("p")
+        ist(innerDeco.find().map(d => `${d.from}-${d.to}`).join(), "1-2")
+        return {dom, contentDOM: dom}
+      }},
+      decorations(state) {
+        return DecorationSet.create(state.doc, [
+          Decoration.inline(2, 3, {someattr: "ok"}),
+          Decoration.node(0, 5, {otherattr: "ok"})
+        ])
+      }
+    })
+  })
+
+  it("provides access to inner decorations in the update method", () => {
+    let innerDecos = []
+    let view = tempEditor({
+      doc: doc(p("foo")),
+      nodeViews: {paragraph(node) {
+        let dom = document.createElement("p")
+        return {dom, contentDOM: dom, update(node_, _, innerDecoSet) {
+          innerDecos = innerDecoSet.find().map(d => `${d.from}-${d.to}`)
+          return node.sameMarkup(node_)
+        }}
+      }}
+    })
+
+    view.setProps({
+      decorations(state) {
+        return DecorationSet.create(state.doc, [
+          Decoration.inline(2, 3, {someattr: "ok"}),
+          Decoration.node(0, 5, {otherattr: "ok"})
+        ])
+      }
+    })
+
+    ist(innerDecos.join(), "1-2")
+  })
 })

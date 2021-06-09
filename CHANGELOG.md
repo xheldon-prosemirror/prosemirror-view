@@ -1,3 +1,207 @@
+## 1.18.7 (2021-05-20)
+
+### Bug fixes
+
+Fix a bug where clicking on a textblock that had a node-selected parent didn't set a cursor selection.
+
+Fix a bug that caused a workaround for a Chrome Android issue to not work correctly, leading to bad cursor placement after some types of text input.
+
+## 1.18.6 (2021-05-17)
+
+### Bug fixes
+
+Fix a crash in mouse click handling introduced in the previous version.
+
+## 1.18.5 (2021-05-17)
+
+### Bug fixes
+
+Work around a Firefox bug where backspace sometimes deletes the node after the cursor.
+
+Fix a bug that prevented `transformPasted` hooks from being called on content dragged within the editor.
+
+Fixes an issue where clicking near a node or other special selection on Chrome would in some cases do nothing.
+
+## 1.18.4 (2021-04-27)
+
+### Bug fixes
+
+Fix incorrect drag cursor in Chrome on some platforms.
+
+Fix an issue where a race condition could leave a node uneditable when clicked.
+
+Fix scroll handling when the editor is placed through a DOM component slot.
+
+Fix a typo in the Chrome backspace workaround.
+
+Fixes an issue where, when mouseup events weren't being delivered, the editor could leak event handlers.
+
+## 1.18.3 (2021-04-13)
+
+### Bug fixes
+
+Fix an issue where, when pressing enter or space at the start of a composition, the cursor would jump to the end of the composition on Chrome Android.
+
+Fix an issue that would cause Enter presses to be dropped on Android when in a node whose DOM representation nested more than one element.
+
+Fix a bug where pasting specific types of HTML could cause a crash.
+
+## 1.18.2 (2021-03-25)
+
+### Bug fixes
+
+Properly handle CSS class name strings with extra spaces in decorations.
+
+Fix a performance bug when updating nodes with thousands of children.
+
+## 1.18.1 (2021-03-15)
+
+### Bug fixes
+
+Fix the scrolling-into-view logic in the case where a scale transformation is applied to the editor. Strip carriage return chars from text pasted as code
+
+Remove carriage return characters when pasting text into code blocks.
+
+## 1.18.0 (2021-03-04)
+
+### Bug fixes
+
+Fix a crash in `posAtDOM`.
+
+### New features
+
+Node view constructors and `update` methods are now passed the inner decorations of the node.
+
+## 1.17.8 (2021-02-26)
+
+### Bug fixes
+
+Fix an issue where some user actions (such as enter on iOS) in a node whose content DOM element isn't it's top element could leave the DOM in a damaged state.
+
+## 1.17.7 (2021-02-22)
+
+### Bug fixes
+
+Fix an issue where the `ProseMirror-hideselection` element class would be briefly removed and then restored when moving from one invisible selection to another.
+
+Fix an issue where the cursor could end up on the wrong side of a widget with `side` < 0.
+
+## 1.17.6 (2021-02-11)
+
+### Bug fixes
+
+Fix an issue where using the vertical arrow keys after select-all didn't update the selection.
+
+## 1.17.5 (2021-02-05)
+
+### Bug fixes
+
+Fix an issue where the view could go into an endless DOM flush loop in specific circumstances involving asynchronous DOM mutation.
+
+## 1.17.4 (2021-02-04)
+
+### Bug fixes
+
+Add another kludge to work around an issue where Firefox displays the cursor in the wrong place in code blocks.
+
+Fix a bug where validation of decorations passed to `DecorationSet.add` sometimes passed the wrong offsets to the validator.
+
+Fix bad selection position in empty textblocks. Solves several issues with editing in Firefox Android.
+
+## 1.17.3 (2021-01-29)
+
+### Bug fixes
+
+Fix a bug where adding invalid decorations (for example zero-length inline decorations) with `DecorationSet.add` would fail to drop those.
+
+## 1.17.2 (2021-01-12)
+
+### Bug fixes
+
+The library will now always let the browser perform its native pasting behavior when the clipboard data is empty and no paste handler handles the event.
+
+Fix a bug where `domAtPos` (and thus cursor placement) would pick positions inside uneditable DOM or atom nodes.
+
+## 1.17.1 (2021-01-08)
+
+### Bug fixes
+
+Fix a regression in `coordsAtPos` when used on an empty line at the end of a code block.
+
+## 1.17.0 (2021-01-07)
+
+### Bug fixes
+
+Fix an issue where starting a composition with stored marks would sometimes create the wrong steps (and thus break the mark) on Chrome.
+
+### New features
+
+`EditorView.domAtPos` now takes a second parameter that can be used to control whether it should enter DOM nodes on the side of the given position.
+
+## 1.16.5 (2020-12-11)
+
+### Bug fixes
+
+Fix platform detection on recent iPadOS versions, restoring several workarounds for bugs that were accidentally turned off there.
+
+## 1.16.4 (2020-12-02)
+
+### Bug fixes
+
+Fix an issue where the cursor ended up in the wrong place when pressing enter in an empty heading on iOS.
+
+## 1.16.3 (2020-11-23)
+
+### Bug fixes
+
+Fix an issue where pressing enter at the start of a line in a code block would leave the visible cursor in the wrong place on Firefox.
+
+## 1.16.2 (2020-11-18)
+
+### Bug fixes
+
+Fix a bug where overlapping inline decorations would get drawn incorrectly (and even corrupt the drawing of unrelated content).
+
+## 1.16.1 (2020-10-26)
+
+### Bug fixes
+
+Fix an issue where the attributes of defining nodes were dropped when copying to the clipboard.
+
+## 1.16.0 (2020-10-01)
+
+### Bug fixes
+
+Fix an issue where a drag starting briefly after an aborted drag could confuse the view and break the second drag. Allow callers of coordsAtPos to specify a side
+
+### New features
+
+`EditorView.coordsAtPos` now takes a `side` argument that determines which side of the position to look, if ambiguous.
+
+## 1.15.7 (2020-09-11)
+
+### Bug fixes
+
+Fix an issue where, when inserting `<br>` nodes, Safari would briefly show the cursor before the inserted break, though the DOM selection had already been set after it.
+
+When dragging inside the editor, whether the operation copies or moves is now determined by the modifiers held on drop, not on drag start.
+
+## 1.15.6 (2020-09-03)
+
+### Bug fixes
+
+Fix issue where the DOM selection could end up in an invalid state after a keyboard cursor motion event that had no effect.
+
+Fix an issue where some types of drop events would fail to select the dropped content.
+
+Work around Safari issues when pressing shift-down with the cursor before an uneditable element.
+
+## 1.15.5 (2020-08-25)
+
+### Bug fixes
+
+Fix an issue where mapping a decoration set could corrupt the decoration positions in specific cases.
+
 ## 1.15.4 (2020-08-13)
 
 ### Bug fixes
