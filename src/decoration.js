@@ -497,6 +497,8 @@ export class DecorationSet {
 // An object that can [provide](#view.EditorProps.decorations)
 // decorations. Implemented by [`DecorationSet`](#view.DecorationSet),
 // and passed to [node views](#view.EditorProps.nodeViews).
+//
+// @cn 一个可以提供 [decorations](#view.EditorProps.decorations) 的对象。被 [`DecorationSet`](#view.DecorationSet) 实现，会被传给 [node views](#view.EditorProps.nodeViews) 方法。
 
 const empty = new DecorationSet()
 
