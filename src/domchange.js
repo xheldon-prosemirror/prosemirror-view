@@ -25,7 +25,7 @@ function parseBetween(view, from_, to_) {
   if (browser.chrome && view.lastKeyCode === 8) {
     for (let off = toOffset; off > fromOffset; off--) {
       let node = parent.childNodes[off - 1], desc = node.pmViewDesc
-      if (node.nodeType == "BR" && !desc) { toOffset = off; break }
+      if (node.nodeName == "BR" && !desc) { toOffset = off; break }
       if (!desc || desc.size) break
     }
   }
@@ -93,6 +93,13 @@ export function readDOMChange(view, from, to, typeOver, addedNodes) {
 
   let sel = view.state.selection
   let parse = parseBetween(view, from, to)
+  // Chrome sometimes leaves the cursor before the inserted text when
+  // composing after a cursor wrapper. This moves it forward.
+  if (browser.chrome && view.cursorWrapper && parse.sel && parse.sel.anchor == view.cursorWrapper.deco.from) {
+    let text = view.cursorWrapper.deco.type.toDOM.nextSibling
+    let size = text && text.nodeValue ? text.nodeValue.length : 1
+    parse.sel = {anchor: parse.sel.anchor + size, head: parse.sel.anchor + size}
+  }
 
   let doc = view.state.doc, compare = doc.slice(parse.from, parse.to)
   let preferredPos, preferredSide
@@ -111,6 +118,11 @@ export function readDOMChange(view, from, to, typeOver, addedNodes) {
     if (typeOver && sel instanceof TextSelection && !sel.empty && sel.$head.sameParent(sel.$anchor) &&
         !view.composing && !(parse.sel && parse.sel.anchor != parse.sel.head)) {
       change = {start: sel.from, endA: sel.to, endB: sel.to}
+    } else if ((browser.ios && view.lastIOSEnter > Date.now() - 225 || browser.android) &&
+               addedNodes.some(n => n.nodeName == "DIV" || n.nodeName == "P") &&
+               view.someProp("handleKeyDown", f => f(view, keyEvent(13, "Enter")))) {
+      view.lastIOSEnter = 0
+      return
     } else {
       if (parse.sel) {
         let sel = resolveSelection(view, view.state.doc, parse.sel)
@@ -168,6 +180,12 @@ export function readDOMChange(view, from, to, typeOver, addedNodes) {
     return
   }
 
+  // Chrome Android will occasionally, during composition, delete the
+  // entire composition and then immediately insert it again. This is
+  // used to detect that situation.
+  if (browser.chrome && browser.android && change.toB == change.from)
+    view.lastAndroidDelete = Date.now()
+
   // This tries to detect Android virtual keyboard
   // enter-and-pick-suggestion action. That sometimes (see issue
   // #1059) first fires a DOM mutation, before moving the selection to
@@ -224,7 +242,8 @@ export function readDOMChange(view, from, to, typeOver, addedNodes) {
     // Edge just doesn't move the cursor forward when you start typing
     // in an empty block or between br nodes.
     if (sel && !(browser.chrome && browser.android && view.composing && sel.empty &&
-                   (sel.head == chFrom || sel.head == tr.mapping.map(chTo) - 1) ||
+                 (change.start != change.endB || view.lastAndroidDelete < Date.now() - 100) &&
+                 (sel.head == chFrom || sel.head == tr.mapping.map(chTo) - 1) ||
                  browser.ie && sel.empty && sel.head == chFrom))
       tr.setSelection(sel)
   }

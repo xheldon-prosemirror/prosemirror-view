@@ -31,12 +31,16 @@ export function selectionFromDOM(view, origin) {
   return selection
 }
 
+function editorOwnsSelection(view) {
+  return view.editable ? view.hasFocus() :
+    hasSelection(view) && document.activeElement && document.activeElement.contains(view.dom)
+}
+
 export function selectionToDOM(view, force) {
   let sel = view.state.selection
   syncNodeSelection(view, sel)
 
-  if (view.editable ? !view.hasFocus() :
-      !(hasSelection(view) && document.activeElement && document.activeElement.contains(view.dom))) return
+  if (!editorOwnsSelection(view)) return
 
   view.domObserver.disconnectSelection()
 
@@ -74,7 +78,7 @@ export function selectionToDOM(view, force) {
 const brokenSelectBetweenUneditable = browser.safari || browser.chrome && browser.chrome_version < 63
 
 function temporarilyEditableNear(view, pos) {
-  let {node, offset} = view.docView.domFromPos(pos)
+  let {node, offset} = view.docView.domFromPos(pos, 0)
   let after = offset < node.childNodes.length ? node.childNodes[offset] : null
   let before = offset ? node.childNodes[offset - 1] : null
   if (browser.safari && after && after.contentEditable == "false") return setEditable(after)
@@ -103,7 +107,10 @@ function removeClassOnSelectionChange(view) {
   doc.addEventListener("selectionchange", view.hideSelectionGuard = () => {
     if (domSel.anchorNode != node || domSel.anchorOffset != offset) {
       doc.removeEventListener("selectionchange", view.hideSelectionGuard)
-      view.dom.classList.remove("ProseMirror-hideselection")
+      setTimeout(() => {
+        if (!editorOwnsSelection(view) || view.state.selection.visible)
+          view.dom.classList.remove("ProseMirror-hideselection")
+      }, 20)
     }
   })
 }
@@ -174,7 +181,7 @@ export function hasSelection(view) {
 }
 
 export function anchorInRightPlace(view) {
-  let anchorDOM = view.docView.domFromPos(view.state.selection.anchor)
+  let anchorDOM = view.docView.domFromPos(view.state.selection.anchor, 0)
   let domSel = view.root.getSelection()
   return isEquivalentPosition(anchorDOM.node, anchorDOM.offset, domSel.anchorNode, domSel.anchorOffset)
 }

@@ -8,12 +8,17 @@ export const domIndex = function(node) {
 }
 
 export const parentNode = function(node) {
-  let parent = node.parentNode
+  let parent = node.assignedSlot || node.parentNode
   return parent && parent.nodeType == 11 ? parent.host : parent
 }
 
+let reusedRange = null
+
+// Note that this will always return the same range, because DOM range
+// objects are every expensive, and keep slowing down subsequent DOM
+// updates, for some reason.
 export const textRange = function(node, from, to) {
-  let range = document.createRange()
+  let range = reusedRange || (reusedRange = document.createRange())
   range.setEnd(node, to == null ? node.nodeValue.length : to)
   range.setStart(node, from || 0)
   return range

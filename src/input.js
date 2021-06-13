@@ -25,6 +25,7 @@ export function initInput(view) {
 
   view.lastIOSEnter = 0
   view.lastIOSEnterFallbackTimeout = null
+  view.lastAndroidDelete = 0
 
   view.composing = false
   view.composingTimeout = null
@@ -265,12 +266,14 @@ handlers.mousedown = (view, event) => {
   let pos = view.posAtCoords(eventCoords(event))
   if (!pos) return
 
-  if (type == "singleClick")
+  if (type == "singleClick") {
+    if (view.mouseDown) view.mouseDown.done()
     view.mouseDown = new MouseDown(view, pos, event, flushed)
-  else if ((type == "doubleClick" ? handleDoubleClick : handleTripleClick)(view, pos.pos, pos.inside, event))
+  } else if ((type == "doubleClick" ? handleDoubleClick : handleTripleClick)(view, pos.pos, pos.inside, event)) {
     event.preventDefault()
-  else
+  } else {
     setSelectionOrigin(view, "pointer")
+  }
 }
 
 class MouseDown {
@@ -299,8 +302,9 @@ class MouseDown {
     const targetDesc = target ? view.docView.nearestDesc(target, true) : null
     this.target = targetDesc ? targetDesc.dom : null
 
+    let {selection} = view.state
     if (targetNode.type.spec.draggable && targetNode.type.spec.selectable !== false ||
-        view.state.selection instanceof NodeSelection && targetPos == view.state.selection.from)
+        selection instanceof NodeSelection && selection.from <= targetPos && selection.to > targetPos)
       this.mightDrag = {node: targetNode,
                         pos: targetPos,
                         addAttr: this.target && !this.target.draggable,
@@ -310,7 +314,9 @@ class MouseDown {
       this.view.domObserver.stop()
       if (this.mightDrag.addAttr) this.target.draggable = true
       if (this.mightDrag.setUneditable)
-        setTimeout(() => this.target.setAttribute("contentEditable", "false"), 20)
+        setTimeout(() => {
+          if (this.view.mouseDown == this) this.target.setAttribute("contentEditable", "false")
+        }, 20)
       this.view.domObserver.start()
     }
 
@@ -355,7 +361,8 @@ class MouseDown {
                // thus doesn't get a reaction from ProseMirror. This
                // works around that.
                (browser.chrome && !(this.view.state.selection instanceof TextSelection) &&
-                (pos.pos == this.view.state.selection.from || pos.pos == this.view.state.selection.to))) {
+                Math.min(Math.abs(pos.pos - this.view.state.selection.from),
+                         Math.abs(pos.pos - this.view.state.selection.to)) <= 2)) {
       updateSelection(this.view, Selection.near(this.view.state.doc.resolve(pos.pos)), "pointer")
       event.preventDefault()
     } else {
@@ -368,6 +375,7 @@ class MouseDown {
                                Math.abs(this.event.y - event.clientY) > 4))
       this.allowDefault = true
     setSelectionOrigin(this.view, "pointer")
+    if (event.buttons == 0) this.done()
   }
 }
 
@@ -405,7 +413,8 @@ editHandlers.compositionstart = editHandlers.compositionupdate = view => {
     view.domObserver.flush()
     let {state} = view, $pos = state.selection.$from
     if (state.selection.empty &&
-        (state.storedMarks || (!$pos.textOffset && $pos.parentOffset && $pos.nodeBefore.marks.some(m => m.type.spec.inclusive === false)))) {
+        (state.storedMarks ||
+         (!$pos.textOffset && $pos.parentOffset && $pos.nodeBefore.marks.some(m => m.type.spec.inclusive === false)))) {
       // Need to wrap the cursor in mark nodes different from the ones in the DOM context
       view.markCursor = view.state.storedMarks || $pos.marks()
       endComposition(view, true)
@@ -531,22 +540,19 @@ function capturePaste(view, e) {
 
 function doPaste(view, text, html, e) {
   let slice = parseFromClipboard(view, text, html, view.shiftKey, view.state.selection.$from)
-  if (view.someProp("handlePaste", f => f(view, e, slice || Slice.empty)) || !slice) return
+  if (view.someProp("handlePaste", f => f(view, e, slice || Slice.empty))) return true
+  if (!slice) return false
 
   let singleNode = sliceSingleNode(slice)
   let tr = singleNode ? view.state.tr.replaceSelectionWith(singleNode, view.shiftKey) : view.state.tr.replaceSelection(slice)
   view.dispatch(tr.scrollIntoView().setMeta("paste", true).setMeta("uiEvent", "paste"))
+  return true
 }
 
 editHandlers.paste = (view, e) => {
   let data = brokenClipboardAPI ? null : e.clipboardData
-  let html = data && data.getData("text/html"), text = data && data.getData("text/plain")
-  if (data && (html || text || data.files.length)) {
-    doPaste(view, text, html, e)
-    e.preventDefault()
-  } else {
-    capturePaste(view, e)
-  }
+  if (data && doPaste(view, data.getData("text/plain"), data.getData("text/html"), e)) e.preventDefault()
+  else capturePaste(view, e)
 }
 
 class Dragging {
@@ -577,12 +583,17 @@ handlers.dragstart = (view, e) => {
   let slice = view.state.selection.content(), {dom, text} = serializeForClipboard(view, slice)
   e.dataTransfer.clearData()
   e.dataTransfer.setData(brokenClipboardAPI ? "Text" : "text/html", dom.innerHTML)
+  // See https://github.com/ProseMirror/prosemirror/issues/1156
+  e.dataTransfer.effectAllowed = "copyMove"
   if (!brokenClipboardAPI) e.dataTransfer.setData("text/plain", text)
   view.dragging = new Dragging(slice, !e[dragCopyModifier])
 }
 
 handlers.dragend = view => {
-  window.setTimeout(() => view.dragging = null, 50)
+  let dragging = view.dragging
+  window.setTimeout(() => {
+    if (view.dragging == dragging)  view.dragging = null
+  }, 50)
 }
 
 editHandlers.dragover = editHandlers.dragenter = (_, e) => e.preventDefault()
@@ -597,10 +608,15 @@ editHandlers.drop = (view, e) => {
   if (!eventPos) return
   let $mouse = view.state.doc.resolve(eventPos.pos)
   if (!$mouse) return
-  let slice = dragging && dragging.slice ||
-      parseFromClipboard(view, e.dataTransfer.getData(brokenClipboardAPI ? "Text" : "text/plain"),
-                         brokenClipboardAPI ? null : e.dataTransfer.getData("text/html"), false, $mouse)
-  if (view.someProp("handleDrop", f => f(view, e, slice || Slice.empty, dragging && dragging.move))) {
+  let slice = dragging && dragging.slice
+  if (slice) {
+    view.someProp("transformPasted", f => { slice = f(slice) })
+  } else {
+    slice = parseFromClipboard(view, e.dataTransfer.getData(brokenClipboardAPI ? "Text" : "text/plain"),
+                               brokenClipboardAPI ? null : e.dataTransfer.getData("text/html"), false, $mouse)
+  }
+  let move = dragging && !e[dragCopyModifier]
+  if (view.someProp("handleDrop", f => f(view, e, slice || Slice.empty, move))) {
     e.preventDefault()
     return
   }
@@ -611,7 +627,7 @@ editHandlers.drop = (view, e) => {
   if (insertPos == null) insertPos = $mouse.pos
 
   let tr = view.state.tr
-  if (dragging && dragging.move) tr.deleteSelection()
+  if (move) tr.deleteSelection()
 
   let pos = tr.mapping.map(insertPos)
   let isNode = slice.openStart == 0 && slice.openEnd == 0 && slice.content.childCount == 1
@@ -624,10 +640,13 @@ editHandlers.drop = (view, e) => {
 
   let $pos = tr.doc.resolve(pos)
   if (isNode && NodeSelection.isSelectable(slice.content.firstChild) &&
-      $pos.nodeAfter && $pos.nodeAfter.sameMarkup(slice.content.firstChild))
+      $pos.nodeAfter && $pos.nodeAfter.sameMarkup(slice.content.firstChild)) {
     tr.setSelection(new NodeSelection($pos))
-  else
-    tr.setSelection(selectionBetween(view, $pos, tr.doc.resolve(tr.mapping.map(insertPos))))
+  } else {
+    let end = tr.mapping.map(insertPos)
+    tr.mapping.maps[tr.mapping.maps.length - 1].forEach((_from, _to, _newFrom, newTo) => end = newTo)
+    tr.setSelection(selectionBetween(view, $pos, tr.doc.resolve(end)))
+  }
   view.focus()
   view.dispatch(tr.setMeta("uiEvent", "drop"))
 }

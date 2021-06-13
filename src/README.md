@@ -23,3 +23,5 @@ ProseMirror 的 view 模块用来在 DOM 中展示给定的 [编辑器的 state]
 @DecorationAttrs
 
 @DecorationSet
+
+@DecorationSource

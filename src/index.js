@@ -223,7 +223,7 @@ export class EditorView {
       else if (state.selection instanceof NodeSelection)
         scrollRectIntoView(this, this.docView.domAfterPos(state.selection.from).getBoundingClientRect(), startDOM)
       else
-        scrollRectIntoView(this, this.coordsAtPos(state.selection.head), startDOM)
+        scrollRectIntoView(this, this.coordsAtPos(state.selection.head, 1), startDOM)
     } else if (oldScrollPos) {
       resetScrollPos(oldScrollPos)
     }
@@ -338,31 +338,40 @@ export class EditorView {
     return posAtCoords(this, coords)
   }
 
-  // :: (number) → {left: number, right: number, top: number, bottom: number}
-  // Returns the viewport rectangle at a given document position. `left`
-  // and `right` will be the same number, as this returns a flat
-  // cursor-ish rectangle.
+  // :: (number, number) → {left: number, right: number, top: number, bottom: number}
+  // Returns the viewport rectangle at a given document position.
+  // `left` and `right` will be the same number, as this returns a
+  // flat cursor-ish rectangle. If the position is between two things
+  // that aren't directly adjacent, `side` determines which element is
+  // used. When < 0, the element before the position is used,
+  // otherwise the element after.
   //
-  // @cn 返回给定文档位置的相对于视口的坐标及大小信息。`left` 和 `right` 总是相同，因为该函数返回的是一个光标的的位置和大小信息。
+  // @cn 返回给定文档位置的相对于视口的坐标及大小信息。`left` 和 `right` 总是相同，因为该函数返回的是一个光标的位置和大小信息。如果给定位置在两个不相邻的元素之间，`side`决定哪个元素应该被使用。当 < 0 时，将使用给定位置前面的元素，反之使用后面的。
   //
   // @comment 光标只有高度没有宽度，因此只有 top 和 bottom 及 height 信息；left 和 right 总是一样的，width 总是 0.
   //
   // @comment 这个方法也很常用，因为一般情况下你不会用到 DOM 的坐标信息。
-  coordsAtPos(pos) {
-    return coordsAtPos(this, pos)
+  coordsAtPos(pos, side = 1) {
+    return coordsAtPos(this, pos, side)
   }
 
-  // :: (number) → {node: dom.Node, offset: number}
+  // :: (number, number) → {node: dom.Node, offset: number}
   // Find the DOM position that corresponds to the given document
-  // position. Note that you should **not** mutate the editor's
-  // internal DOM, only inspect it (and even that is usually not
-  // necessary).
+  // position. When `side` is negative, find the position as close as
+  // possible to the content before the position. When positive,
+  // prefer positions close to the content after the position. When
+  // zero, prefer as shallow a position as possible.
   //
-  // @cn 返回给定位置的 DOM 节点。记住：你 **绝对不应该** 直接修改编辑器内部的 DOM，而只能查看它（虽然即使是检查它也是不必要的）
+  // Note that you should **not** mutate the editor's internal DOM,
+  // only inspect it (and even that is usually not necessary).
+  //
+  // @cn 返回给定位置的 DOM 节点。当 `side` 为负数的时候，找到离给定位置最近的前一个DOM节点。当为正数时，更倾向于离给定位置后面的DOM节点。当为0时，更倾向于较浅的位置。
+  //
+  // 记住：你 **绝对不应该** 直接修改编辑器内部的 DOM，而只能查看它（虽然即使是检查它也是不必要的）
   //
   // @comment `查看它` 的意思是只能获取 DOM 的信息，而不要设置。
-  domAtPos(pos) {
-    return this.docView.domFromPos(pos)
+  domAtPos(pos, side = 0) {
+    return this.docView.domFromPos(pos, side)
   }
 
   // :: (number) → ?dom.Node
@@ -691,7 +700,7 @@ function changedNodeViews(a, b) {
 //
 //   @cn 可以用来在将粘贴的内容应用到文档之前转换一下。
 //
-//   nodeViews:: ?Object<(node: Node, view: EditorView, getPos: () → number, decorations: [Decoration]) → NodeView>
+//   nodeViews:: ?Object<(node: Node, view: EditorView, getPos: () → number, decorations: [Decoration], innerDecorations: DecorationSource) → NodeView>
 //   Allows you to pass custom rendering and behavior logic for nodes
 //   and marks. Should map node and mark names to constructor
 //   functions that produce a [`NodeView`](#view.NodeView) object
@@ -706,16 +715,24 @@ function changedNodeViews(a, b) {
 //   对于 nodes 来说，第三个参数 `getPos` 是一个函数，调用它可以获取 node 当前的位置，这对于创建一个 transaction 然后更新它很有用。
 //   对于 marks 来说，第三个参数是一个 boolean 值，指示 mark 的内容是否是 inline 的。
 //
+//   @comment 最后一句话的意思是，在 plugin.props 的 decoration 属性上，你可以通过构造 decoration 的时候添加一些额外的信息，然后在 node view 中拿到这些信息来搞事情。
+//
 //   `decorations` is an array of node or inline decorations that are
 //   active around the node. They are automatically drawn in the
 //   normal way, and you will usually just want to ignore this, but
 //   they can also be used as a way to provide context information to
 //   the node view without adding it to the document itself.
 //
-//   @cn `decoration` 是一个在当前 node 周围激活的 node decoration 或者 inline decoration 数组。
+//   @cn `decorations` 是一个在当前 node 周围激活的 node decoration 或者 inline decoration 数组。
 //   他们会自动绘制，通常情况下你可以忽略它们，不过它们也可以用来为 node view 提供上下文信息，而不是将它们添加到文档中。
 //
-//   @comment 最后一句话的意思是，在 plugin.props 的 decoration 属性上，你可以通过构造 decoration 的时候添加一些额外的信息，然后在 node view 中拿到这些信息来搞事情。
+//   `innerDecorations` holds the decorations for the node's content.
+//   You can safely ignore this if your view has no content or a
+//   `contentDOM` property, since the editor will draw the decorations
+//   on the content. But if you, for example, want to create a nested
+//   editor with the content, it may make sense to provide it with the
+//   inner decorations.
+//  @cn `innerDecorations` 保存节点内容的 decorations。如果你的节点视图没有内容或者有`contentDOM` 属性，你可以安全的忽略这个，因为编辑器会把 decorations 绘制到内容上。但是如果你想要使用节点内容创建一个嵌套的编辑器，则这个 inner decorations 可能是有意义的。
 //
 //   clipboardSerializer:: ?DOMSerializer
 //   The DOM serializer to use when putting content onto the
@@ -733,7 +750,7 @@ function changedNodeViews(a, b) {
 //
 //   @cn 当复制内容到粘贴板的时候，该方法将会被调用以用来获取选区内的文本。默认情况下，编辑器会在选区范围使用 [`textBetween`](#model.Node.textBetween) 方法。
 //
-//   decorations:: ?(state: EditorState) → ?DecorationSet
+//   decorations:: ?(state: EditorState) → ?DecorationSource
 //   A set of [document decorations](#view.Decoration) to show in the
 //   view.
 //
