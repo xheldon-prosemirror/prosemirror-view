@@ -176,6 +176,7 @@ export class DOMObserver {
       this.handleDOMChange(from, to, typeOver, added)
       if (this.view.docView.dirty) this.view.updateState(this.view.state)
       else if (!this.currentSelection.eq(sel)) selectionToDOM(this.view)
+      this.currentSelection.set(sel)
     }
   }
 
@@ -191,6 +192,9 @@ export class DOMObserver {
     if (!desc || desc.ignoreMutation(mut)) return null
 
     if (mut.type == "childList") {
+      for (let i = 0; i < mut.addedNodes.length; i++) added.push(mut.addedNodes[i])
+      if (desc.contentDOM && desc.contentDOM != desc.dom && !desc.contentDOM.contains(mut.target))
+        return {from: desc.posBefore, to: desc.posAfter}
       let prev = mut.previousSibling, next = mut.nextSibling
       if (browser.ie && browser.ie_version <= 11 && mut.addedNodes.length) {
         // IE11 gives us incorrect next/prev siblings for some
@@ -206,7 +210,6 @@ export class DOMObserver {
       let from = desc.localPosFromDOM(mut.target, fromOffset, -1)
       let toOffset = next && next.parentNode == mut.target
           ? domIndex(next) : mut.target.childNodes.length
-      for (let i = 0; i < mut.addedNodes.length; i++) added.push(mut.addedNodes[i])
       let to = desc.localPosFromDOM(mut.target, toOffset, 1)
       return {from, to}
     } else if (mut.type == "attributes") {

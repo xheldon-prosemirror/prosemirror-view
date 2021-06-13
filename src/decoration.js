@@ -275,7 +275,8 @@ export class Decoration {
 //   @cn 如果该值为非 null，则目标节点将会用该类型的节点包裹住（同时其他的属性会被应用到该元素上）。
 const none = [], noSpec = {}
 
-// ::- A collection of [decorations](#view.Decoration), organized in
+// :: class extends DecorationSource
+// A collection of [decorations](#view.Decoration), organized in
 // such a way that the drawing algorithm can efficiently use and
 // compare them. This is a persistent data structure—it is not
 // modified, updates create a new value.
@@ -392,6 +393,8 @@ export class DecorationSet {
     })
 
     let local = moveSpans(childIndex ? withoutNulls(decorations) : decorations, -offset)
+    for (let i = 0; i < local.length; i++) if (!local[i].type.valid(doc, local[i])) local.splice(i--, 1)
+
     return new DecorationSet(local.length ? this.local.concat(local).sort(byPos) : this.local,
                              children || this.children)
   }
@@ -490,6 +493,11 @@ export class DecorationSet {
   }
 }
 
+// DecorationSource:: interface
+// An object that can [provide](#view.EditorProps.decorations)
+// decorations. Implemented by [`DecorationSet`](#view.DecorationSet),
+// and passed to [node views](#view.EditorProps.nodeViews).
+
 const empty = new DecorationSet()
 
 // :: DecorationSet
@@ -581,7 +589,7 @@ function mapChildren(oldChildren, newLocal, mapping, node, offset, oldOffset, op
   // recursively call mapInner on them and update their positions.
   let mustRebuild = false
   for (let i = 0; i < children.length; i += 3) if (children[i + 1] == -1) { // Touched nodes
-    let from = mapping.map(children[i] + oldOffset), fromLocal = from - offset
+    let from = mapping.map(oldChildren[i] + oldOffset), fromLocal = from - offset
     if (fromLocal < 0 || fromLocal >= node.content.size) {
       mustRebuild = true
       continue
@@ -591,7 +599,7 @@ function mapChildren(oldChildren, newLocal, mapping, node, offset, oldOffset, op
     let {index, offset: childOffset} = node.content.findIndex(fromLocal)
     let childNode = node.maybeChild(index)
     if (childNode && childOffset == fromLocal && childOffset + childNode.nodeSize == toLocal) {
-      let mapped = children[i + 2].mapInner(mapping, childNode, from + 1, children[i] + oldOffset + 1, options)
+      let mapped = children[i + 2].mapInner(mapping, childNode, from + 1, oldChildren[i] + oldOffset + 1, options)
       if (mapped != empty) {
         children[i] = fromLocal
         children[i + 1] = toLocal

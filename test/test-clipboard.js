@@ -19,7 +19,7 @@ describe("Clipboard interface", () => {
     let d = doc(blockquote(ul(li(p("fo<a>o"), p("b<b>ar")))))
     let view = tempEditor({doc: d})
     let slice = TextSelection.create(d, d.tag.a, d.tag.b).content(), {dom, text} = serializeForClipboard(view, slice)
-    ist(dom.innerHTML, '<li data-pm-slice="2 2 [&quot;blockquote&quot;,null,&quot;bullet_list&quot;,null]"><p>o</p><p>b</p></li>')
+    ist(dom.innerHTML, '<li data-pm-slice="2 2 [&quot;blockquote&quot;,{},&quot;bullet_list&quot;,{}]"><p>o</p><p>b</p></li>')
     ist(parseFromClipboard(view, text, dom.innerHTML, false, d.resolve(1)), d.slice(d.tag.a, d.tag.b, true), eq)
     ist(parseFromClipboard(view, text, dom.innerHTML, true, d.resolve(1)), new Slice(doc(p("o"), p("b")).content, 1, 1), eq)
   })
@@ -72,5 +72,12 @@ describe("Clipboard interface", () => {
     let view = tempEditor({clipboardTextParser(text) { return doc(p(text.toUpperCase())).slice(1, text.length + 1) }})
     ist(parseFromClipboard(view, "abc", null, false, view.state.doc.resolve(1)),
         new Slice(p("ABC").content, 0, 0), eq)
+  })
+
+  it("preserves attributes", () => {
+    let d = doc(ol({order: 3}, li(p("f<a>o<b>o"))))
+    let view = tempEditor({doc: d})
+    let {dom, text} = serializeForClipboard(view, TextSelection.create(d, d.tag.a, d.tag.b).content())
+    ist(parseFromClipboard(view, text, dom.innerHTML, false, d.resolve(1)), d.slice(d.tag.a, d.tag.b, true), eq)
   })
 })

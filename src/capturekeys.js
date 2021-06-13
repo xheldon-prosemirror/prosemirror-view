@@ -1,6 +1,7 @@
-import {Selection, NodeSelection, TextSelection} from "prosemirror-state"
+import {Selection, NodeSelection, TextSelection, AllSelection} from "prosemirror-state"
 import browser from "./browser"
 import {domIndex, selectionCollapsed} from "./dom"
+import {selectionToDOM} from "./selection"
 
 function moveSelectionBlock(state, dir) {
   let {$anchor, $head} = state.selection
@@ -161,6 +162,11 @@ function setSelFocus(view, sel, node, offset) {
     sel.extend(node, offset)
   }
   view.domObserver.setCurSelection()
+  let {state} = view
+  // If no state update ends up happening, reset the selection.
+  setTimeout(() => {
+    if (view.state == state) selectionToDOM(view)
+  }, 50)
 }
 
 // : (EditorState, number)
@@ -179,8 +185,9 @@ function selectVertically(view, dir, mods) {
       return apply(view, next)
   }
   if (!$from.parent.inlineContent) {
-    let beyond = Selection.findFrom(dir < 0 ? $from : $to, dir)
-    return beyond ? apply(view, beyond) : true
+    let side = dir < 0 ? $from : $to
+    let beyond = sel instanceof AllSelection ? Selection.near(side, dir) : Selection.findFrom(side, dir)
+    return beyond ? apply(view, beyond) : false
   }
   return false
 }
@@ -208,12 +215,13 @@ function switchEditable(view, node, state) {
   view.domObserver.start()
 }
 
-// Issue #867 / https://bugs.chromium.org/p/chromium/issues/detail?id=903821
-// In which Chrome does really wrong things when the down arrow is
-// pressed when the cursor is directly at the start of a textblock and
-// has an uneditable node after it
-function chromeDownArrowBug(view) {
-  if (!browser.chrome || view.state.selection.$head.parentOffset > 0) return
+// Issue #867 / #1090 / https://bugs.chromium.org/p/chromium/issues/detail?id=903821
+// In which Safari (and at some point in the past, Chrome) does really
+// wrong things when the down arrow is pressed when the cursor is
+// directly at the start of a textblock and has an uneditable node
+// after it
+function safariDownArrowBug(view) {
+  if (!browser.safari || view.state.selection.$head.parentOffset > 0) return
   let {focusNode, focusOffset} = view.root.getSelection()
   if (focusNode && focusNode.nodeType == 1 && focusOffset == 0 &&
       focusNode.firstChild && focusNode.firstChild.contentEditable == "false") {
@@ -254,7 +262,7 @@ export function captureKeyDown(view, event) {
   } else if (code == 38) { // Up arrow
     return selectVertically(view, -1, mods) || skipIgnoredNodesLeft(view)
   } else if (code == 40) { // Down arrow
-    return chromeDownArrowBug(view) || selectVertically(view, 1, mods) || skipIgnoredNodesRight(view)
+    return safariDownArrowBug(view) || selectVertically(view, 1, mods) || skipIgnoredNodesRight(view)
   } else if (mods == (browser.mac ? "m" : "c") &&
              (code == 66 || code == 73 || code == 89 || code == 90)) { // Mod-[biyz]
     return true

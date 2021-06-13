@@ -1,10 +1,10 @@
-const {doc, blockquote, p, em, img: img_, strong, code, br, hr, ul, li} = require("prosemirror-test-builder")
+const {doc, blockquote, p, em, img: img_, strong, code, code_block, br, hr, ul, li} = require("prosemirror-test-builder")
 const ist = require("ist")
 const {Selection, NodeSelection} = require("prosemirror-state")
 const {tempEditor, findTextNode} = require("./view")
 const {Decoration, DecorationSet} = require("..")
 
-const img = img_({src: "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="})
+const img = img_({src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7"})
 
 function allPositions(doc) {
   let found = []
@@ -128,6 +128,22 @@ describe("EditorView", () => {
     ist(p13.left, p10.left, ">")
   })
 
+  it("returns proper coordinates in code blocks", () => {
+    let view = tempEditor({doc: doc(code_block("a\nb\n"))}), p = []
+    for (let i = 1; i <= 5; i++) p.push(view.coordsAtPos(i))
+    let [p0, p1, p2, p3, p4] = p
+    ist(p0.top, p1.top)
+    ist(p0.left, p1.left, "<")
+    ist(p2.top, p1.top, ">")
+    ist(p2.top, p3.top)
+    ist(p2.left, p3.left, "<")
+    ist(p2.left, p0.left)
+    ist(p4.top, p3.top, ">")
+    // This one shows a small (0.01 pixel) difference in Firefox for
+    // some reason.
+    ist(Math.round(p4.left), Math.round(p2.left))
+  })
+
   it("produces sensible screen coordinates in corner cases", () => {
     let view = tempEditor({doc: doc(p("one", em("two", strong("three"), img), br, code("foo")), p())})
     return new Promise(ok => {
@@ -165,14 +181,45 @@ describe("EditorView", () => {
   it("produces sensible screen coordinates around line breaks", () => {
     let view = tempEditor({doc: doc(p("one two three four five-six-seven-eight"))})
     view.dom.style.width = "4em"
-    allPositions(view.state.doc);[9].forEach(pos => {
-      let coords = view.coordsAtPos(pos)
+    let prevBefore, prevAfter
+    allPositions(view.state.doc).forEach(pos => {
+      let coords = view.coordsAtPos(pos, 1)
+      if (prevAfter)
+        ist(prevAfter.top < coords.top || prevAfter.top == coords.top && prevAfter.left < coords.left)
+      prevAfter = coords
       let found = view.posAtCoords({top: coords.top + 1, left: coords.left}).pos
       ist(found, pos)
+      let coordsBefore = view.coordsAtPos(pos, -1)
+      if (prevBefore)
+        ist(prevBefore.top < coordsBefore.top || prevBefore.top == coordsBefore.top && prevBefore.left < coordsBefore.left)
+      prevBefore = coordsBefore
     })
   })
 
-  it("can go back and forth between screen coords and document positions", () => {
+  it("can find coordinates on node boundaries", () => {
+    let view = tempEditor({doc: doc(p("one ", em("two"), " ", em(strong("three"))))})
+    let prev
+    allPositions(view.state.doc).forEach(pos => {
+      let coords = view.coordsAtPos(pos, 1)
+      if (prev)
+        ist(prev.top < coords.top || Math.abs(prev.top - coords.top) < 4 && prev.left < coords.left)
+      prev = coords
+    })
+  })
+
+  it("finds proper coordinates in RTL text", () => {
+    let view = tempEditor({doc: doc(p("مرآة نثرية"))})
+    view.dom.style.direction = "rtl"
+    let prev
+    allPositions(view.state.doc).forEach(pos => {
+      let coords = view.coordsAtPos(pos, 1)
+      if (prev)
+        ist(prev.top < coords.top || Math.abs(prev.top - coords.top) < 4 && prev.left > coords.left)
+      prev = coords
+    })
+  })
+
+  it("can go back and forth between screen coordsa and document positions", () => {
     let view = tempEditor({doc: doc(p("one"), blockquote(p("two"), p("three")))})
     ;[1, 2, 4, 7, 14, 15].forEach(pos => {
       let coords = view.coordsAtPos(pos)
@@ -272,6 +319,7 @@ describe("EditorView", () => {
   it("sets selection even if Selection.extend throws DOMException", () => {
     let originalExtend = window.Selection.prototype.extend
     window.Selection.prototype.extend = () => {
+      // declare global: DOMException
       throw new DOMException("failed")
     }
     try {
@@ -282,5 +330,12 @@ describe("EditorView", () => {
     } finally {
       window.Selection.prototype.extend = originalExtend
     }
+  })
+
+  it("doesn't put the cursor after BR hack nodes", () => {
+    if (!document.hasFocus()) return
+    let view = tempEditor({doc: doc(p())})
+    view.focus()
+    ist(getSelection().focusOffset, 0)
   })
 })
