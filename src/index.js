@@ -633,7 +633,7 @@ function changedNodeViews(a, b) {
 //   pasted content parsed by the editor, but you can directly access
 //   the event to get at the raw content.
 //
-//   @cn 可以用来覆盖默认的粘贴行为。`slice` 是被编辑器格式化后的粘贴内容，不顾你也可以通过直接访问事件对象来获取原始的粘贴内容。
+//   @cn 可以用来覆盖默认的粘贴行为。`slice` 是被编辑器格式化后的粘贴内容，不过你也可以通过直接访问事件对象来获取原始的粘贴内容。
 //
 //   @comment 粘贴事件中的数据位于 event.dataTransfer 对象上。
 //
