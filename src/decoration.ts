@@ -105,13 +105,22 @@ export class NodeType implements DecorationType {
 /// Decoration objects can be provided to the view through the
 /// [`decorations` prop](#view.EditorProps.decorations). They come in
 /// several variants—see the static members of this class for details.
+///
+/// @cn Decoration（装饰器）对象可以通过 [`decoration` 属性](#view.EditorProps.decorations)提供给 view。
+/// 它们有多个不同的变体，有关的详细信息，参见此类的静态成员。
+///
+/// @comment Decoration 有三种，widget 挂件装饰器；inline 行内装饰器；node 节点装饰器；
 export class Decoration {
   /// @internal
   constructor(
     /// The start position of the decoration.
+    ///
+    /// @cn decoration 开始的位置
     readonly from: number,
     /// The end position. Will be the same as `from` for [widget
     /// decorations](#view.Decoration^widget).
+    ///
+    /// @cn decoration 结束的位置。如果是 [widget decorations](#view.Decoration^widget) 的话，该值将会和 `from` 一致。
     readonly to: number,
     /// @internal
     readonly type: DecorationType
@@ -138,6 +147,9 @@ export class Decoration {
   /// called when the widget is actually drawn in a view, but you can
   /// also directly pass a DOM node. `getPos` can be used to find the
   /// widget's current document position.
+  ///
+  /// @cn 创建一个 widget decorations，它是一个显示在给定位置的 DOM 节点。推荐的方式是通过传递一个函数来返回 decoration，以实现当该 decoration
+  /// 绘制在 view 的时候延迟渲染的目的，不过你也可以直接传递一个 DOM 节点。`getPos` 方法用来获取 widget 在当前文档的位置。
   static widget(pos: number, toDOM: WidgetConstructor, spec?: {
     /// Controls which side of the document position this widget is
     /// associated with. When negative, it is drawn before a cursor
@@ -146,26 +158,44 @@ export class Decoration {
     /// widget is drawn after the cursor and content inserted there
     /// ends up before the widget.
     ///
+    ///
+    /// @cn 控制该 widget 与文档位置的哪一侧相关。当是负数的时候，它绘制在给定位置光标的之前，
+    /// 并且在该位置插入的内容在 widget 之后。当非负（默认）的时候，widget 绘制在给定位置光标之后，用户输入的内容会插入到该位置之前。
+    ///
     /// When there are multiple widgets at a given position, their
     /// `side` values determine the order in which they appear. Those
     /// with lower values appear first. The ordering of widgets with
     /// the same `side` value is unspecified.
     ///
+    /// @cn 当在同一个位置有多个 widget 的时候，他们的 `side` 决定了它们出现的顺序。较小的值出现在前面。
+    /// 相同 `side` 值的话先后位置不确定。
+    ///
+    /// @comment 相同 `side` 值 widget 出现的先后位置不确定，原因跟某些算法排序的 `稳定` 概念类似。
+    ///
     /// When `marks` is null, `side` also determines the marks that
     /// the widget is wrapped in—those of the node before when
     /// negative, those of the node after when positive.
+    ///
+    /// @cn 当 `marks` 是 null 的时候，`side` 同样决定 widget 包裹的 marks。节点之前的是负的，节点之后的是正的。
     side?: number
 
     /// The precise set of marks to draw around the widget.
+    ///
+    /// @cn 绘制在 widget 周围的 marks。
     marks?: readonly Mark[]
 
     /// Can be used to control which DOM events, when they bubble out
     /// of this widget, the editor view should ignore.
+    ///
+    /// @cn 可以用来控制编辑器应该忽略从 widget 冒泡出来的哪些 DOM 事件。
     stopEvent?: (event: Event) => boolean
 
     /// When set (defaults to false), selection changes inside the
     /// widget are ignored, and don't cause ProseMirror to try and
     /// re-sync the selection with its selection state.
+    ///
+    /// @cn 当设置的时候（默认是 false），在 widget 内的选区变化将被忽略，
+    /// 这样的话该变化就不会让 ProseMirror 尝试重新同步该选区和 state 的选区。
     ignoreSelection?: boolean
 
     /// When comparing decorations of this type (in order to decide
@@ -177,13 +207,22 @@ export class Decoration {
     /// key are interchangeable—if widgets differ in, for example,
     /// the behavior of some event handler, they should get
     /// different keys.
+    ///     
+    /// @cn 当比较此种类型的 decorations 的时候（以决定它是否应该被重绘），ProseMirror
+    /// 将会默认通过 widget DOM 节点来识别。如果你传递了一个 key，那它就会用 key 来对比。
+    /// 这对于你仅仅想在内存中创建 decorations 而不真正绘制 DOM 结构很有用。确保任何具有相同 key 的 widget
+    /// 是可互换的--比如，如果 widget 的一些事件处理函数不一样，即使 DOM 结构相同，也应该有不同的 key。
     key?: string
 
     /// Called when the widget decoration is removed or the editor is
     /// destroyed.
+    ///
+    /// @cn 当该 widget 装饰器被移除或者编辑器被销毁的时候会被调用
     destroy?: (node: DOMNode) => void
 
     /// Specs allow arbitrary additional properties.
+    ///
+    /// @cn spec 允许任意附加属性。
     [key: string]: any
   }): Decoration {
     return new Decoration(pos, pos, new WidgetType(toDOM, spec))
@@ -191,20 +230,29 @@ export class Decoration {
 
   /// Creates an inline decoration, which adds the given attributes to
   /// each inline node between `from` and `to`.
+  ///
+  /// @cn 创建一个内联的 decoration，它会在 `from` 和 `to` 之间的每一个内联节点上添加给定的 attributes。
   static inline(from: number, to: number, attrs: DecorationAttrs, spec?: {
     /// Determines how the left side of the decoration is
     /// [mapped](#transform.Position_Mapping) when content is
     /// inserted directly at that position. By default, the decoration
     /// won't include the new content, but you can set this to `true`
     /// to make it inclusive.
+    ///
+    /// @cn 决定如果内容直接插入在这个位置的时候，decoration 的左侧如何 [mapped](#transform.Position_Mapping)。
+    /// 默认情况下，decoration 不会包括新的内容，不过你可以设置为 `true` 来让它影响新内容。
     inclusiveStart?: boolean
 
     /// Determines how the right side of the decoration is mapped.
     /// See
     /// [`inclusiveStart`](#view.Decoration^inline^spec.inclusiveStart).
+    ///
+    /// @cn 决定 decoration 的右侧如何被 mapped。具体看 [`inclusiveStart`](#view.Decoration^inline^spec.inclusiveStart)。
     inclusiveEnd?: boolean
 
     /// Specs may have arbitrary additional properties.
+    ///
+    /// @cn spec 允许任意附加属性。
     [key: string]: any
   }) {
     return new Decoration(from, to, new InlineType(attrs, spec))
@@ -213,12 +261,16 @@ export class Decoration {
   /// Creates a node decoration. `from` and `to` should point precisely
   /// before and after a node in the document. That node, and only that
   /// node, will receive the given attributes.
+  ///
+  /// @cn 创建一个 node decoration。`from` 和 `to` 应该精确的指向在文档中的某个节点的前面和后面。该节点，也只有该节点，会受到给定的 attributes。
   static node(from: number, to: number, attrs: DecorationAttrs, spec?: any) {
     return new Decoration(from, to, new NodeType(attrs, spec))
   }
 
   /// The spec provided when creating this decoration. Can be useful
   /// if you've stored extra information in that object.
+  ///   
+  /// @cn 当创建 decoration 的时候提供的配置。用来存储一些额外的信息非常有用。
   get spec() { return this.type.spec }
 
   /// @internal
@@ -231,6 +283,9 @@ export class Decoration {
 /// A set of attributes to add to a decorated node. Most properties
 /// simply directly correspond to DOM attributes of the same name,
 /// which will be set to the property's value. These are exceptions:
+///
+/// @cn 一个被用来添加到被装饰的节点附近的 attributes 集合。大多数 properties
+/// 的名字与同名的 DOM attributes 一样，以用来被设置为属性值。下面几个是特例：
 export type DecorationAttrs = {
   /// When non-null, the target node is wrapped in a DOM element of
   /// this type (and the other attributes are applied to this element).

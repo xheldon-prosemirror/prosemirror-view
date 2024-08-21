@@ -868,6 +868,8 @@ function checkStateComponent(plugin: Plugin) {
 
 /// The type of function [provided](#view.EditorProps.nodeViews) to
 /// create [node views](#view.NodeView).
+///
+/// @cn 为创建[node views](#view.NodeView)提供的[类型函数](#view.EditorProps.nodeViews)
 export type NodeViewConstructor = (
   node: Node,
   view: EditorView,
@@ -878,6 +880,8 @@ export type NodeViewConstructor = (
 
 /// The function types [used](#view.EditorProps.markViews) to create
 /// mark views.
+///
+/// @cn 为创建mark views[提供](#view.EditorProps.markViews)的类型函数
 export type MarkViewConstructor = (
   mark: Mark,
   view: EditorView,
@@ -889,6 +893,10 @@ type NodeViewSet = { [name: string]: NodeViewConstructor | MarkViewConstructor }
 /// Helper type that maps event names to event object types, but
 /// includes events that TypeScript's HTMLElementEventMap doesn't know
 /// about.
+///
+/// @cn 一个将 Typescript 中 HTMLElementEventMap 不知道的事件名映射到事件类型的辅助类型
+///
+/// @comment 说白了扩展 HTMLElementEventMap 能够支持更多类型,一般用户用不到
 export interface DOMEventMap extends HTMLElementEventMap {
   [event: string]: any
 }
