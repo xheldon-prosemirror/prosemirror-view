@@ -289,16 +289,24 @@ export class Decoration {
 export type DecorationAttrs = {
   /// When non-null, the target node is wrapped in a DOM element of
   /// this type (and the other attributes are applied to this element).
+  ///
+  /// @cn 如果该值为非 null，则目标节点将会用该类型的节点包裹住（同时其他的属性会被应用到该元素上）。
   nodeName?: string
 
   /// A CSS class name or a space-separated set of class names to be
   /// _added_ to the classes that the node already had.
+  ///
+  ///   @cn 会被 _添加_ 到节点已有的类名上的 CSS 的类名，或者用空格分隔的 css 类名集合。
   class?: string
 
   /// A string of CSS to be _added_ to the node's existing `style` property.
+  ///
+  ///   @cn 会被 _添加_ 到节点已有的 `style` 属性上的 CSS 字符串。
   style?: string
 
   /// Any other properties are treated as regular DOM attributes.
+  ///
+  /// @cn 任何其他属性都被视为常规DOM属性。
   [attribute: string]: string | undefined
 }
 
@@ -307,13 +315,19 @@ const none: readonly any[] = [], noSpec = {}
 /// An object that can [provide](#view.EditorProps.decorations)
 /// decorations. Implemented by [`DecorationSet`](#view.DecorationSet),
 /// and passed to [node views](#view.EditorProps.nodeViews).
+///
+/// @cn 一个可以提供 [decorations](#view.EditorProps.decorations) 的对象。被 [`DecorationSet`](#view.DecorationSet) 实现，会被传给 [node views](#view.EditorProps.nodeViews) 方法。
 export interface DecorationSource {
   /// Map the set of decorations in response to a change in the
   /// document.
+  ///
+  /// @cn Map decorations 的集合以响应文档修改。
   map: (mapping: Mapping, node: Node) => DecorationSource
   /// @internal
   locals(node: Node): readonly Decoration[]
   /// Extract a DecorationSource containing decorations for the given child node at the given offset.
+  ///
+  /// @cn 在给定的偏移量处提取一个包含给定子节点装饰的 DecorationSource
   forChild(offset: number, child: Node): DecorationSource
   /// @internal
   eq(other: DecorationSource): boolean
@@ -323,6 +337,9 @@ export interface DecorationSource {
 /// a way that the drawing algorithm can efficiently use and compare
 /// them. This is a persistent data structure—it is not modified,
 /// updates create a new value.
+///
+/// @cn 一个 [decorations](#view.Decoration) 集合，用这种数据结构组织它们可以让绘制算法高效的对比和渲染它们。
+/// 它是一个不可突变的数据结构，它不改变，更新会产生新的值。
 export class DecorationSet implements DecorationSource {
   /// @internal
   local: readonly Decoration[]
@@ -338,6 +355,8 @@ export class DecorationSet implements DecorationSource {
   /// Create a set of decorations, using the structure of the given
   /// document. This will consume (modify) the `decorations` array, so
   /// you must make a copy if you want need to preserve that.
+  ///
+  /// @cn 用给定文档的结构，创建一个 decorations 集合。
   static create(doc: Node, decorations: Decoration[]) {
     return decorations.length ? buildTree(decorations, doc, 0, noSpec) : empty
   }
@@ -348,6 +367,10 @@ export class DecorationSet implements DecorationSource {
   /// `start` and `end` are omitted, all decorations in the set are
   /// considered. When `predicate` isn't given, all decorations are
   /// assumed to match.
+  ///
+  /// @cn 找到给定范围涉及到的所有的 decoration 集合（包括开始或结束位置在边界的 decorations），
+  /// 然后用给定的 predicate 函数来检测是否匹配，该函数参数是 decoration 的配置对象。
+  /// 若 `start` 和 `end` 省略，则集合中所有的 decoration 将会被检测。如果 `predicate` 没有给出，则所有的 decorations 将会 match。
   find(start?: number, end?: number, predicate?: (spec: any) => boolean): Decoration[] {
     let result: Decoration[] = []
     this.findInner(start == null ? 0 : start, end == null ? 1e9 : end, result, 0, predicate)
@@ -371,10 +394,14 @@ export class DecorationSet implements DecorationSource {
 
   /// Map the set of decorations in response to a change in the
   /// document.
+  ///
+  /// @cn Map decorations 的集合以响应文档修改。
   map(mapping: Mapping, doc: Node, options?: {
     /// When given, this function will be called for each decoration
     /// that gets dropped as a result of the mapping, passing the
     /// spec of that decoration.
+    ///
+    /// @cn 当设置该函数的时候，该函数会对在 mapping 过程中被移除的 decoration 调用该函数，传递 decoration 的配置对象。
     onRemove?: (decorationSpec: any) => void
   }) {
     if (this == empty || mapping.maps.length == 0) return this
@@ -402,6 +429,9 @@ export class DecorationSet implements DecorationSource {
   /// producing a new set. Consumes the `decorations` array. Needs
   /// access to the current document to create the appropriate tree
   /// structure.
+  ///
+  /// @cn 在当前 decorations 集合中增加给定数组中的 decorations，以产生一个新的集合。
+  /// 消费传递的 `decorations` 数组。 需要传递当前文档 doc 以创建合适的树状结构。
   add(doc: Node, decorations: Decoration[]) {
     if (!decorations.length) return this
     if (this == empty) return DecorationSet.create(doc, decorations)
@@ -432,6 +462,8 @@ export class DecorationSet implements DecorationSource {
 
   /// Create a new set that contains the decorations in this set, minus
   /// the ones in the given array.
+  ///
+  /// @cn 用当前的 decorations 集合减去给定数组中的 decorations，得到一个新的 decorations 集合。
   remove(decorations: Decoration[]) {
     if (decorations.length == 0 || this == empty) return this
     return this.removeInner(decorations, 0)
@@ -526,6 +558,8 @@ export class DecorationSet implements DecorationSource {
   }
 
   /// The empty set of decorations.
+  ///
+  /// @cn decorations 的空集合。
   static empty: DecorationSet = new DecorationSet([], [])
 
   /// @internal
