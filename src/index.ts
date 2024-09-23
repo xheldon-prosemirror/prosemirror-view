@@ -632,6 +632,7 @@ export class EditorView {
   /// `getBoundingClientRect` on that DOM node. Do **not** mutate the
   /// editor DOM directly, or add styling this way, since that will be
   /// immediately overriden by the editor as it redraws the node.
+  ///
   /// @cn 该方法设计的目的是让你能够在 DOM 上调用类似 `getBoundingClientRect` 方法。**绝对不要** 直接修改编辑器的 DOM 元素，也不要通过这种方式添加样式之类的，因为你的修改可能随着节点的重绘被立即覆盖掉。
   ///
   /// @comment domAtPos 获取的是给定位置的 DOM 宽高和坐标信息，nodeDOM 获取的是给定位置的 DOM。你可以通过 nodeDOM 获取到 DOM 后再手动获取位置信息。
